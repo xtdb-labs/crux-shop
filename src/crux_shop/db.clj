@@ -69,7 +69,12 @@
          '{:find [(eql/project ?e [*])]
            :where [[?e :type :item]]}))
 
-#_(defn add-item
+(defn item-by-id
+  [node args]
+  (external-view
+   (crux/entity (crux/db node) (:id args))))
+
+(defn add-item
   [node doc]
   (let [crux-doc (-> doc
                      (assoc :type :item)
@@ -78,12 +83,36 @@
     (log/debug :adding crux-doc)
     (external-view crux-doc)))
 
+(defn update-quantity
+  [node {:keys [id quantity] :as args}]
+  (crux/submit-tx node [[:crux.tx/fn :update-quantity id quantity]])
+  (external-view args))
+
+(defn sell-item
+  [node {:keys [id quantity] :or {quantity 1} :as args}]
+  (crux/submit-tx node [[:crux.tx/fn :sell id quantity]])
+  (external-view args))
+
 (defn seed!
   [node]
   (let [seed-docs [{:crux.db/id "moldy-bread"
                     :name "Moldy bread"
                     :type :item
-                    :description "This isn't safe to eat"}]]
+                    :description "This isn't safe to eat"}
+                   
+                   {:crux.db/id :sell
+                    :crux.db/fn '(fn [ctx eid quantity]
+                                   (let [db (crux.api/db ctx)
+                                         entity (crux.api/entity db eid)
+                                         new-quantity (- (:quantity entity) quantity)]
+                                     (when (< 0 new-quantity)
+                                       [[:crux.tx/put (assoc entity :quantity new-quantity)]])))}
+                   
+                   {:crux.db/id :update-quantity
+                    :crux.db/fn '(fn [ctx eid quantity]
+                                   (let [db (crux.api/db ctx)
+                                         entity (crux.api/entity db eid)]
+                                     [[:crux.tx/put (assoc entity :quantity quantity)]]))}]]
     (log/debug :seeding seed-docs)
     (insert! node seed-docs))
   (log/debug :seeding "done"))

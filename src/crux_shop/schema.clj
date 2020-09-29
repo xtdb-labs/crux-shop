@@ -13,17 +13,34 @@
   (fn [_ _args _]
     (db/all-items node)))
 
-#_(defn- add-item
+(defn- item-by-id
+  [node]
+  (fn [_ args _]
+    (db/item-by-id node args)))
+
+(defn- add-item
   [node]
   (fn [_ args _]
     (db/add-item node args)))
+
+(defn- update-quantity
+  [node]
+  (fn [_ args _]
+    (db/update-quantity node args)))
+
+(defn- sell-item
+  [node]
+  (fn [_ args _]
+    (db/sell-item node args)))
 
 (defn- resolver-map
   [component]
   (let [node (get-in component [:db :node])]
     {:query/all-items (all-items node)
-;;     :mutation/add-item (add-item node)
-     }))
+     :query/item-by-id (item-by-id node)     
+     :mutation/add-item (add-item node)
+     :mutation/update_quantity (update-quantity node)
+     :mutation/sell_item (sell-item node)}))
 
 (defn- load-schema
   [component]

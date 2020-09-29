@@ -43,7 +43,7 @@
           actual (q "{all_items {id name description}}")]
       (is (= expected actual)))))
 
-#_(deftest add-item-test
+(deftest add-item-test
   (testing "can add item to db"
     (let [expected {:data
                     {:add_item
@@ -57,3 +57,56 @@
               :all_items
               set
               (contains? {:id "pasta", :name "pasta", :description "Delicious pasta"}))))))
+
+(deftest add-quantity-test
+  (testing "can update quantity of item already in db"
+    (let [expected {:data
+                    {:update_quantity
+                     {:id "moldy-bread"
+                      :quantity 1}}}
+          actual (q "mutation {update_quantity(id: \"moldy-bread\", quantity: 1) {id quantity}}")]
+      (is (= expected actual)))
+
+    (testing "no data is lost in the transaction"
+      (Thread/sleep 100)
+      (is (= {:data
+              {:item_by_id
+               {:id "moldy-bread"
+                :name "Moldy bread"
+                :quantity 1
+                :description "This isn't safe to eat"}}}
+             (q "{item_by_id(id: \"moldy-bread\"){id name quantity description}}"))))))
+
+(deftest sell-item-test
+  (q "mutation {update_quantity(id: \"moldy-bread\", quantity: 10) {id quantity}}")
+  (Thread/sleep 100)
+
+  (testing "can sell an item"
+    (let [expected {:data {:sell_item {:id "moldy-bread", :quantity 2}}}
+          actual (q "mutation {sell_item(id: \"moldy-bread\", quantity: 2) {id quantity}}")]
+      (is (= expected actual))))
+
+  (Thread/sleep 100)
+  (testing "no data is lost in the transaction"
+    (is (= {:data
+            {:item_by_id
+             {:id "moldy-bread"
+              :name "Moldy bread"
+              :quantity 8
+              :description "This isn't safe to eat"}}}
+           (q "{item_by_id(id: \"moldy-bread\"){id name quantity description}}"))))
+
+  (testing "can sell an item without specifying quantity"
+    (let [expected {:data {:sell_item {:id "moldy-bread", :quantity nil}}}
+          actual (q "mutation {sell_item(id: \"moldy-bread\") {id quantity}}")]
+      (is (= expected actual))))
+
+  (Thread/sleep 100)
+  (testing "no data is lost in the transaction"
+    (is (= {:data
+            {:item_by_id
+             {:id "moldy-bread"
+              :name "Moldy bread"
+              :quantity 7
+              :description "This isn't safe to eat"}}}
+           (q "{item_by_id(id: \"moldy-bread\"){id name quantity description}}")))))

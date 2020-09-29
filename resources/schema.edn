@@ -4,6 +4,8 @@
    :fields
    {:id {:type (non-null String)}
     :name {:type (non-null String)}
+    :quantity {:type Int
+               :description "The quantity of this item"}
     :description {:type String
                   :description "A long-form description of the item."}}}}
 
@@ -11,16 +13,35 @@
  {:all_items
   {:type (list :Item)
    :description "Return all items"
-   :resolve :query/all-items}}
+   :resolve :query/all-items}
 
- ;; :mutations
- ;; {:add_item
- ;;  {:type :Item
- ;;   :description "Add an item"
- ;;   :args
- ;;   {:id {:type (non-null String)}
- ;;    :name {:type (non-null String)}
- ;;    :description {:type String
- ;;                  :description "A long-form description of the item."}}
- ;;   :resolve :mutation/add-item}}
- }
+  :item_by_id
+  {:type :Item
+   :description "Return item from id"
+   :resolve :query/item-by-id
+   :args {:id {:type (non-null String)}}}}
+
+ :mutations
+ {:add_item
+  {:type :Item
+   :description "Add an item"
+   :args
+   {:id {:type (non-null String)}
+    :name {:type (non-null String)}
+    :description {:type String
+                  :description "A long-form description of the item."}}
+   :resolve :mutation/add-item}
+
+  :update_quantity
+  {:type :Item
+   :description "Give an item a quantity"
+   :args {:id {:type (non-null String)}
+          :quantity {:type Int}}
+   :resolve :mutation/update_quantity}
+
+  :sell_item
+  {:type :Item
+   :description "Sell an item in the shop"
+   :args {:id {:type (non-null String)}
+          :quantity {:type Int}}
+   :resolve :mutation/sell_item}}}
