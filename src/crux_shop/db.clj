@@ -63,6 +63,24 @@
      (for [id (all-ids node)]
        [:crux.tx/delete id]))))
 
+(defn all-transactions
+  [node]
+  (query node
+         '{:find [(eql/project ?e [*])]
+           :where [(or [?e :type :PURCHASE]
+                       [?e :type :REFUND])]}))
+
+(defn shop-balance
+  [node]
+  (let [transactions (all-transactions node)]
+    (reduce (fn [acc tx]
+              ((if (= :PURCHASE (:type tx))
+                 +
+                 -)
+               acc
+               (* (:quantity tx)
+                  (:amount tx)))) 0 transactions)))
+
 (defn all-items
   [node]
   (query node
@@ -93,21 +111,34 @@
   (crux/submit-tx node [[:crux.tx/fn :sell id quantity]])
   (external-view args))
 
+(defn create-transaction
+  [item-id quantity amount type]
+  {:crux.db/id (str (gensym "transaction"))
+   :type type
+   :quantity quantity
+   :item item-id
+   :amount amount})
+
 (defn seed!
   [node]
   (let [seed-docs [{:crux.db/id "moldy-bread"
                     :name "Moldy bread"
                     :type :item
+                    :quantity 10
+                    :price 100
                     :description "This isn't safe to eat"}
-                   
+
                    {:crux.db/id :sell
-                    :crux.db/fn '(fn [ctx eid quantity]
-                                   (let [db (crux.api/db ctx)
-                                         entity (crux.api/entity db eid)
-                                         new-quantity (- (:quantity entity) quantity)]
-                                     (when (< 0 new-quantity)
-                                       [[:crux.tx/put (assoc entity :quantity new-quantity)]])))}
-                   
+                    :crux.db/fn
+                    '(fn [ctx item-id quantity]
+                       (let [db (crux.api/db ctx)
+                             item (crux.api/entity db item-id)
+                             price (:price item)
+                             new-quantity (- (:quantity item) quantity)]
+                         (when (< 0 new-quantity)
+                           [[:crux.tx/put (assoc item :quantity new-quantity)]
+                            [:crux.tx/put (crux-shop.db/create-transaction item-id quantity price :PURCHASE)]])))}
+
                    {:crux.db/id :update-quantity
                     :crux.db/fn '(fn [ctx eid quantity]
                                    (let [db (crux.api/db ctx)

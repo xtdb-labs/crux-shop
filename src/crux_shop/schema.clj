@@ -13,6 +13,16 @@
   (fn [_ _args _]
     (db/all-items node)))
 
+(defn- all-transactions
+  [node]
+  (fn [_ _args _]
+    (db/all-transactions node)))
+
+(defn- shop-balance
+  [node]
+  (fn [_ _args _]
+    (db/shop-balance node)))
+
 (defn- item-by-id
   [node]
   (fn [_ args _]
@@ -37,7 +47,9 @@
   [component]
   (let [node (get-in component [:db :node])]
     {:query/all-items (all-items node)
-     :query/item-by-id (item-by-id node)     
+     :query/all-transactions (all-transactions node)
+     :query/shop-balance (shop-balance node)
+     :query/item-by-id (item-by-id node)
      :mutation/add-item (add-item node)
      :mutation/update_quantity (update-quantity node)
      :mutation/sell_item (sell-item node)}))

@@ -58,6 +58,16 @@
               set
               (contains? {:id "pasta", :name "pasta", :description "Delicious pasta"}))))))
 
+(deftest item-by-id-test
+  (testing "can get item by id"
+    (let [expected {:data
+                    {:item_by_id
+                     {:id "moldy-bread"
+                      :name "Moldy bread"
+                      :description "This isn't safe to eat"}}}
+          actual (q "{item_by_id(id: \"moldy-bread\"){id name description}}")]
+      (is (= expected actual)))))
+
 (deftest add-quantity-test
   (testing "can update quantity of item already in db"
     (let [expected {:data
@@ -110,3 +120,49 @@
               :quantity 7
               :description "This isn't safe to eat"}}}
            (q "{item_by_id(id: \"moldy-bread\"){id name quantity description}}")))))
+
+(deftest transaction-test
+  (let [all-item-q "{all_items {id name quantity price}}"
+        all-transaction-q "{all_transactions {id quantity item amount type}}"
+        balance-q "{shop_balance}"
+        sell-m "mutation {sell_item(id: \"moldy-bread\", quantity: 1) {id}}"]
+
+    (testing "stock before"
+      (is (= {:data
+              {:all_items
+               [{:id "moldy-bread", :name "Moldy bread", :quantity 10, :price 100}]}}
+             (q all-item-q))))
+
+    (testing "transactions before"
+      (is (= {:data {:all_transactions []}}
+             (q all-transaction-q))))
+
+    (testing "balance before"
+      (is (= {:data {:shop_balance 0}}
+             (q balance-q))))
+
+    (testing "sell an item"
+      (is (= {:data {:sell_item {:id "moldy-bread"}}}
+             (q sell-m))))
+
+    (Thread/sleep 100)
+
+    (testing "stock after"
+      (is (= {:data
+              {:all_items
+               [{:id "moldy-bread", :name "Moldy bread", :quantity 9, :price 100}]}}
+             (q all-item-q))))
+
+    (testing "transactions after"
+      (is (= [{:quantity 1,
+               :item "moldy-bread"
+               :amount 100
+               :type :PURCHASE}]
+             (->> (q all-transaction-q)
+                  :data
+                  :all_transactions
+                  (map #(dissoc % :id))))))
+
+    (testing "balance after"
+      (is (= {:data {:shop_balance 100}}
+             (q balance-q))))))

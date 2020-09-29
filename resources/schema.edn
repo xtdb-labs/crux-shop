@@ -1,4 +1,8 @@
-{:objects
+{:enums
+ {:transaction_type
+  {:description "The direction of a transaction, used to determine whether to increase or decrease the shops balance."
+   :values [:PURCHASE :REFUND]}}
+ :objects
  {:Item
   {:description "An item that could be sold in the shop"
    :fields
@@ -6,14 +10,38 @@
     :name {:type (non-null String)}
     :quantity {:type Int
                :description "The quantity of this item"}
+    :price {:type Int
+            :description "The price of the item in cents"}
     :description {:type String
-                  :description "A long-form description of the item."}}}}
+                  :description "A long-form description of the item."}}}
+
+  :Transaction
+  {:description "A record of a financial exchange between the shop and a customer."
+   :fields
+   {:id {:type (non-null String)}
+    :type {:type (non-null :transaction_type)}
+    :quantity {:type (non-null Int)
+               :description "The number of items being purchased in this transaction"}
+    :amount {:type Int
+             :description "The amount of money exchanged in the transaction"}
+    :item {:type (non-null String)
+           :description "The Crux id of the item involved in the transaction"}}}}
 
  :queries
  {:all_items
   {:type (list :Item)
    :description "Return all items"
    :resolve :query/all-items}
+
+  :all_transactions
+  {:type (list :Transaction)
+   :description "Return all transactions"
+   :resolve :query/all-transactions}
+
+  :shop_balance
+  {:type Int
+   :description "Return to current amount in the shops cash register"
+   :resolve :query/shop-balance}
 
   :item_by_id
   {:type :Item
@@ -28,6 +56,8 @@
    :args
    {:id {:type (non-null String)}
     :name {:type (non-null String)}
+    :quantity {:type Int
+               :description "The quantity of this item"}
     :description {:type String
                   :description "A long-form description of the item."}}
    :resolve :mutation/add-item}
