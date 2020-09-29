@@ -42,3 +42,18 @@
                        :description "This isn't safe to eat"}]}}
           actual (q "{all_items {id name description}}")]
       (is (= expected actual)))))
+
+#_(deftest add-item-test
+  (testing "can add item to db"
+    (let [expected {:data
+                    {:add_item
+                     {:id "pasta", :name "pasta", :description "Delicious pasta"}}}
+          actual (q "mutation {add_item(id: \"pasta\", name: \"pasta\", description: \"Delicious pasta\") {id name description}}")]
+      (is (= expected actual)))
+
+    (testing "item is actually added to the db"
+      (is (-> (q "{all_items {id name description}}")
+              :data
+              :all_items
+              set
+              (contains? {:id "pasta", :name "pasta", :description "Delicious pasta"}))))))

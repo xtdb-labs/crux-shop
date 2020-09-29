@@ -13,10 +13,17 @@
   (fn [_ _args _]
     (db/all-items node)))
 
+#_(defn- add-item
+  [node]
+  (fn [_ args _]
+    (db/add-item node args)))
+
 (defn- resolver-map
   [component]
   (let [node (get-in component [:db :node])]
-    {:query/all-items (all-items node)}))
+    {:query/all-items (all-items node)
+;;     :mutation/add-item (add-item node)
+     }))
 
 (defn- load-schema
   [component]

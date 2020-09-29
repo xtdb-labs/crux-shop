@@ -69,6 +69,15 @@
          '{:find [(eql/project ?e [*])]
            :where [[?e :type :item]]}))
 
+#_(defn add-item
+  [node doc]
+  (let [crux-doc (-> doc
+                     (assoc :type :item)
+                     (set/rename-keys {:id :crux.db/id}))]
+    (crux/submit-tx node [[:crux.tx/put crux-doc]])
+    (log/debug :adding crux-doc)
+    (external-view crux-doc)))
+
 (defn seed!
   [node]
   (let [seed-docs [{:crux.db/id "moldy-bread"

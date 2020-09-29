@@ -11,4 +11,16 @@
  {:all_items
   {:type (list :Item)
    :description "Return all items"
-   :resolve :query/all-items}}}
+   :resolve :query/all-items}}
+
+ ;; :mutations
+ ;; {:add_item
+ ;;  {:type :Item
+ ;;   :description "Add an item"
+ ;;   :args
+ ;;   {:id {:type (non-null String)}
+ ;;    :name {:type (non-null String)}
+ ;;    :description {:type String
+ ;;                  :description "A long-form description of the item."}}
+ ;;   :resolve :mutation/add-item}}
+ }
